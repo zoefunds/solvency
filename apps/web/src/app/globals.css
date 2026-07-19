@@ -1,0 +1,75 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #0a0c10;
+  --surface: #12151b;
+  --ledger: #181c23;
+  --text: #edeff3;
+  --muted: #7c8592;
+  --teal: #3fc9a6;
+  --amber: #e3a73b;
+  --red: #db5c5c;
+  --nominal: #5d7a94;
+  --hairline: #252a32;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ledger: var(--ledger);
+  --color-ink: var(--text);
+  --color-muted: var(--muted);
+  --color-teal: var(--teal);
+  --color-amber: var(--amber);
+  --color-risk: var(--red);
+  --color-nominal: var(--nominal);
+  --color-hairline: var(--hairline);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-plex-mono);
+  --font-display: var(--font-grotesk);
+}
+
+html {
+  background: var(--bg);
+  color: var(--text);
+  scrollbar-color: var(--hairline) var(--bg);
+}
+
+body {
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--teal) 30%, transparent);
+}
+
+.ledger-rule {
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--hairline) 0 6px,
+    transparent 6px 12px
+  );
+  height: 1px;
+}
+
+.figure {
+  font-family: var(--font-plex-mono), monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
