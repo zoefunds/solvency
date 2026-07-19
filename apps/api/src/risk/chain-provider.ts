@@ -246,7 +246,12 @@ async function fetchApprovalLogs(
 
   if (chain === "eip155:196") {
     const key = process.env.OKLINK_API_KEY;
-    if (!key) throw new Error("OKLINK_API_KEY not configured — X Layer approval history unavailable");
+    if (!key) {
+      // keyless fallback: dRPC free tier allows 10k-block getLogs ranges on X Layer.
+      // Coverage is bounded (~2 weeks of history); older approvals surface once an
+      // OKLink key is configured. Partial coverage is disclosed, never hidden.
+      return fetchApprovalLogsViaDrpc(wallet);
+    }
     const url =
       `https://www.oklink.com/api/v5/explorer/log/logs?chainShortName=XLAYER` +
       `&topic0=${APPROVAL_TOPIC}&topic1=${ownerTopic}&limit=100`;
@@ -271,6 +276,52 @@ async function fetchApprovalLogs(
   }
 
   throw new Error(`no approval-log source for ${chain}`);
+}
+
+const DRPC_XLAYER = "https://xlayer.drpc.org";
+const DRPC_CHUNK = 10_000n;
+const DRPC_MAX_CHUNKS = 40; // ≈400k blocks ≈ 2 weeks of X Layer history
+
+async function fetchApprovalLogsViaDrpc(
+  wallet: string
+): Promise<{ address: string; spender: string; blockNumber: bigint }[]> {
+  const c = createPublicClient({ transport: http(DRPC_XLAYER, { timeout: CALL_TIMEOUT_MS, retryCount: 1 }) });
+  const head = await c.getBlockNumber();
+  const chunks: { fromBlock: bigint; toBlock: bigint }[] = [];
+  for (let i = 0; i < DRPC_MAX_CHUNKS; i++) {
+    const toBlock = head - BigInt(i) * DRPC_CHUNK;
+    const fromBlock = toBlock - DRPC_CHUNK + 1n;
+    if (toBlock <= 0n) break;
+    chunks.push({ fromBlock: fromBlock > 0n ? fromBlock : 0n, toBlock });
+  }
+  const out: { address: string; spender: string; blockNumber: bigint }[] = [];
+  let failures = 0;
+  // batches of 8 to stay under free-tier rate limits
+  for (let i = 0; i < chunks.length; i += 8) {
+    const batch = chunks.slice(i, i + 8);
+    const results = await Promise.allSettled(
+      batch.map((ch) =>
+        c.getLogs({
+          event: ERC20[2],
+          args: { owner: wallet as `0x${string}` },
+          fromBlock: ch.fromBlock,
+          toBlock: ch.toBlock,
+        })
+      )
+    );
+    for (const r of results) {
+      if (r.status === "fulfilled") {
+        for (const l of r.value) {
+          const spender = (l as { args?: { spender?: string } }).args?.spender;
+          if (spender)
+            out.push({ address: l.address.toLowerCase(), spender: spender.toLowerCase(), blockNumber: l.blockNumber ?? 0n });
+        }
+      } else failures++;
+    }
+  }
+  if (failures === chunks.length) throw new Error("drpc approval scan failed entirely");
+  out.sort((a, b) => Number(a.blockNumber - b.blockNumber));
+  return out;
 }
 
 // ---------- pricing (free llama.fi API, no key) ----------

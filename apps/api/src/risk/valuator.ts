@@ -126,6 +126,11 @@ export async function valuateWallet(
   if (req.valuation_depth === "holdings_plus_approvals") {
     const { approvals, partial } = await withTimeout(provider.getApprovals(req.wallet_address, req.chain));
     approvalsPartial = partial;
+    if (req.chain === "eip155:196" && !process.env.OKLINK_API_KEY) {
+      limitations.push(
+        "X Layer approval history currently covers approximately the last two weeks of blocks; older approvals may not be included"
+      );
+    }
     if (partial)
       limitations.push("approval history could not be fully read; exposure may be understated — treat as insufficient_data, not safety");
 
