@@ -86,7 +86,19 @@ export const SimulationRequest = z
   .object({
     wallet_address: evmAddress,
     chain: chainId,
-    proposed_transaction: z
+    proposed_transaction: z.preprocess(
+      // agent tooling (e.g. payment CLIs) often flattens nested objects to JSON strings
+      (v) => {
+        if (typeof v === "string" && v.length <= 21_000) {
+          try {
+            return JSON.parse(v);
+          } catch {
+            return v;
+          }
+        }
+        return v;
+      },
+      z
       .object({
         to: evmAddress,
         data: z
@@ -97,7 +109,8 @@ export const SimulationRequest = z
         value: z.string().regex(/^\d{1,40}$/, "must be a decimal wei string").optional(),
         decoded_intent: z.enum(["approval", "transfer", "swap", "unknown"]).optional(),
       })
-      .strict(),
+      .strict()
+    ),
     metadata,
   })
   .strict();
