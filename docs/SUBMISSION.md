@@ -13,7 +13,7 @@ Deadline: Google form by **27 Jul 2026, 23:59 UTC**. ASP must pass OKX.AI review
 | category | Finance / on-chain risk |
 | production endpoints | https://solvency-api.fly.dev/v1/risk/simulate-transaction · https://solvency-api.fly.dev/v1/risk/valuate-wallet |
 | website | https://solvency-web.fly.dev |
-| GitHub repository | ⏳ |
+| GitHub repository | https://github.com/zoefunds/solvency |
 | X post | ⏳ (docs/X_POST.md, publish after live) |
 | demo in X post | ⏳ (≤90s, docs/DEMO_SCRIPT.md) |
 | Agentic Wallet receiving address | 0x870c912f6fe56bdd731e2978420ac2c895564da1 |
